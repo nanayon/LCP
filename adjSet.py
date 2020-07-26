@@ -1,4 +1,3 @@
-
 class adjSet():
     def __init__(self, filename):
         lines = None
@@ -9,9 +8,9 @@ class adjSet():
         
         #self.__V, self.__E = (int(i) for i in lines[0].split(' '))
         self.__V = int(lines[0])
-
         self.__E = 0
         self.__edgelist = []    #记录所有的边
+        self.__vset = set(range(1, self.__V+1))
         self.__adj = [set() for _ in range(self.__V+1)]
         for each_line in lines[1:]:
             a, b = (int(i) for i in each_line.split(','))
@@ -23,34 +22,46 @@ class adjSet():
             self.__adj[b].add(a)
             self.__E += 1
             self.__edgelist.append([a, b])
-        # print(self.__edgelist)
+        print(self.__E,"=E")
 
-
+    # 记录真实的顶点数
     @property
     def V(self):
         return self.__V
+    
+    def get_all_v(self):
+        return self.__vset
     
     @property
     def E(self):
         return self.__E
     
-    def get_adjlen(self):
-        return len(self.__adj)
-    
     def get_all_edge(self):
         return self.__edgelist
     
-    #这里adj是一个点
+    '''返回邻接表大小的长度，而不是点的个数'''
+    def get_adjlen(self):
+        return len(self.__adj)
+
+    
+    #这里adj是一个点,和它的一条连边
     def add_vertex(self, v, adj_v):
         self.__adj.append(set())
-        self.__V += 1
         if (v == len(self.__adj) - 1):
             self.__adj[v].add(adj_v)
             self.__adj[adj_v].add(v)
+            self.__V += 1
+            self.__vset.add(v)
+            self.__E += 1
+            self.__edgelist.append([v, adj_v])
+
     
     def add_edge(self, v, u):
-        self.__adj[v].add(u)
-        self.__adj[u].add(v)
+        if (not self.has_edge(u, v)):
+            self.__adj[v].add(u)
+            self.__adj[u].add(v)
+            self.__E += 1
+            self.__edgelist.append([u, v])
         
     #判断两顶点间是否有边存在
     def has_edge(self, v, w):
@@ -71,14 +82,20 @@ class adjSet():
             self.__adj[w].remove(v)
         if [w, v] in self.__edgelist:
             self.__edgelist.remove([w, v])
+            self.__E -= 1
         else:
             self.__edgelist.remove([v, w])
-    
+            self.__E -= 1
+
     #删除点,并删除与所有这个点相邻的边
     def remove_vertex(self, v):
+        if v in self.__vset:
+            self.__vset.discard(v)
+            self.V -= 1
         for w in list(self.__adj[v]):
             self.__adj[v].remove(w)
             self.__adj[w].remove(v)
+            self.__E -= 1
             if [w, v] in self.__edgelist:
                 self.__edgelist.remove([w, v])
             else:
@@ -86,7 +103,6 @@ class adjSet():
     
     #将其他点的边转接到点v上，然后删除list_v中的点
     def merge_vertex(self, v, list_v):
-        #print(list_v)
         for w in list_v:
             for u in self.__adj[w]:
                 if u not in self.__adj[v] and u not in list_v and u != v:
