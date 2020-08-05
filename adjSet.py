@@ -10,7 +10,7 @@ class adjSet():
         self.__V = int(lines[0])
         self.__E = 0
         self.__edgelist = []    #记录所有的边
-        self.__vset = set(range(1, self.__V+1))
+        self.__vset = set()
         self.__adj = [set() for _ in range(self.__V+1)]
         for each_line in lines[1:]:
             a, b = (int(i) for i in each_line.split(','))
@@ -21,8 +21,10 @@ class adjSet():
             self.__adj[a].add(b)
             self.__adj[b].add(a)
             self.__E += 1
+            self.__vset.add(a)
+            self.__vset.add(b)
             self.__edgelist.append([a, b])
-        print(self.__E,"=E")
+        print(self.__E, "=E")
 
     # 记录真实的顶点数
     @property

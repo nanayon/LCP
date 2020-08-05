@@ -2,12 +2,13 @@ from adjSet import adjSet as Graph
 import re
 import csv
 
-class FilePre():
+class FilePro():
     def __init__(self, G, cname, root):
         self.__G = G
         self.__csvname= cname
     
         '''tarjan'''
+        print(self.__G.V)
         self.__dfn, self.__low = [0]*(self.__G.V+1), [0]*(self.__G.V+1)
         self.__index, self.__root = 0, root
         self.__ans = set()                      #保存割点结果
@@ -39,11 +40,11 @@ class FilePre():
  
     '''trajan算法找割点，并分割图'''
     def tarjan(self, v, f):
-        self.__index += 1
+        self.__index += 1   #记录访问次序
         self.__dfn[v] = self.__low[v] = self.__index
         child = 0
-        if f == self.__root and self.__index > 2:
-           self.__root_subtree.append(v)
+        if f == self.__root and self.__index > 2:   #root要单独处理，除了第一个遍历的子节点外
+           self.__root_subtree.append(v)            #其他子树的根节点加入数组中
             
         for u in list(self.__G.adj(v)):
             child += 1
@@ -51,14 +52,14 @@ class FilePre():
                 self.tarjan(u, v)
                 self.__low[v] = min(self.__low[v], self.__low[u])
                 if v != self.__root and self.__low[u] >= self.__dfn[v]:
-                    self.__ans.add(v)
+                    self.__ans.add(v)                              #ans中存储的是原图中的割点
                     self.__G.add_vertex(self.__G.get_adjlen(), u)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
                     self.__G.remove_edge(v, u)                     #断开原来的连接
                     # print(u)
                     self.__component[self.__adjlen] = v
                     self.__adjlen += 1
                 if v == self.__root and child >= 2:
-                    self.__ans.add(v)
+                    self.__ans.add(v)                              #如果根节点是割点，加入ans
                     # print(v,"......")
             else:
                 self.__low[v] = min(self.__low[v], self.__dfn[u])      
@@ -70,9 +71,10 @@ class FilePre():
     def comp_dfs(self, v, u, comp_vis, comp_root): 
         for w in list(self.__G.adj(v)):
             if not comp_vis[w]:
-                if w in self.__ans:
+                if w in self.__ans: #这里为何要移动？
+                    #if w != self.__root:
                     self.__ans.remove(w)
-                    print(w,"-=-=")
+                    print(w, "-=-=")
                 comp_vis[w] = 1
                 if self.__G.has_edge(w, u):         #换边
                     self.__G.remove_edge(w, u)  
@@ -80,13 +82,14 @@ class FilePre():
                 # print(self.__comp_count)
                 self.__comp_count += 1
                 self.comp_dfs(w, u, comp_vis, comp_root)
-
+            
+    # 判断anser中剩下的结点是否在一个联通分片里
     def comp_dfs2(self, v, comp_vis): 
         for w in list(self.__G.adj(v)):
             if not comp_vis[w]:
                 if w in self.__ans:
                     self.__ans.remove(w)
-                    print(w,"-=-=")
+                    print(w,"-=+=")
                 comp_vis[w] = 1
                 # print(self.__comp_count)
                 self.__comp_count += 1
@@ -98,7 +101,9 @@ class FilePre():
         if len(self.__ans) == 0:
             print("该图没有割点")
             return False
-        print(self.__root_subtree)
+        print(self.__root_subtree, ':subtree_root')        #打印子树的根节点
+        print(self.__ans,'~')
+        
         #先处理root点，因为之前他没得断开
         for v in self.__root_subtree:
             self.__G.add_vertex(self.__G.get_adjlen(), v)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
@@ -106,18 +111,20 @@ class FilePre():
             self.__component[self.__adjlen] = v
             self.__adjlen += 1
             
-        print(self.__component.keys())
-        comp_vis = [0] * ((max(self.__component.keys())) + 1)
+        print(self.__component.keys())                          #打印连通分支的根节点
+        comp_vis = [0] * ((max(self.__component.keys())) + 1)   #寻找遍历连通分支用，并增加和断开一些连边
         for v in self.__component.keys():
             comp_vis[v] = 1
             self.__comp_count = 1
-            u = self.__component[v]
+            u = self.__component[v]     #u应该是之前连接的割点
+            print(u,'nihao')
             comp_root = v
-            self.comp_dfs(v, u, comp_vis, comp_root)
+            self.comp_dfs(v, u, comp_vis, comp_root)    
             self.__component[v] = self.__comp_count
         
         #判断ans中剩下的结点是否在一个连通片
         v = self.__ans.pop()
+        print(v)
         comp_vis[v] = 1
         self.__comp_count = 1
         self.comp_dfs2(v, comp_vis)
@@ -126,7 +133,8 @@ class FilePre():
             self.__component[v] = self.__comp_count
             print("剩下的点构成一个连通片")
         return True
-    
+
+
     '''处理三角形'''
     def tri_pre(self):
         pass
@@ -134,21 +142,27 @@ class FilePre():
     def show_information(self):
         print(self.__ans)
         print(self.__component)
-        print(self.__G.V, '=V')
-        print(len(self.__G.get_all_v()))
-        print(self.__G.E, '=E')
+        #print(self.__G.V, '=V')
+        #print(len(self.__G.get_all_v()))
+        #print(self.__G.E, '=E')
         #print(self.__G.get_all_edge())
-        print(len(self.__G.get_all_edge()))
+        #print(len(self.__G.get_all_edge()))
+        print(list(range(0, 14)))
+        print(self.__dfn)
+        print(self.__low)
+        
+
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/homer_pre.csv'
+    filename = './dataset/pre_dataset/anna_pre.csv'
     '''
-    csvname = re.search(r'\.[\w\s+/_]*', filename).group() + 'homer_pre.csv'
+    csvname = re.search(r'\.[\w\s+/_]*', filename).group() + 'anna_pre.csv'
     print(csvname)
     '''
+    root = 13
     graph = Graph(filename)
-    fp = FilePre(graph, filename, 1)
-    fp.tarjan(1, 0)
+    fp = FilePro(graph, filename, root)
+    fp.tarjan(root, 0)
     fp.comp_divis()
     fp.show_information()
     
