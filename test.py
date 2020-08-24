@@ -1,29 +1,23 @@
 from adjSet import adjSet as Graph
 from FileProcess import FilePro
 import random
-from goto import with_goto
 
 class LCPsolver:
     def __init__(self, G):
         self.__G = G
         self.__visited = [False] * (self.__G.get_adjlen() + 1)
         self.__comp_vist = [False] * (self.__G.get_adjlen() + 1)
-        self.__ep_vist = [False] * (self.__G.get_adjlen() + 1)
-        self.__ep_father = [0] * (self.__G.get_adjlen() + 1)
         self.__record = [0] * (G.V + 1)
         self.__record2 = [0] * (G.V + 1)
         self.__path = []
-        self.__path2 = []
         self.__insert_path = []
         self.__comp_v = set()
         self.__stvcounter = 0
         self.__a = 1 #控制长度的参数
-        self.__cycle = set()
-        self.__remain = set()
-        
+
     def reset(self):
         self.__visited = [False] * (self.__G.get_adjlen() + 1)
-        self.__record = [1] * (self.__G.V + 1)
+        self.__record = [0] * (self.__G.V + 1)
         self.__record2 = [0] * (self.__G.V + 1)
         self.__path = []
         self.__stvcounter = 0
@@ -137,18 +131,13 @@ class LCPsolver:
     
     '''扩展圈'''
     def extend_circle(self):
-        self.__cycle = set(self.__path)
-        self.__remain = set(self.__comp_v) - self.__cycle
-        self.__path2 = self.__path[:]
+        cycle = set(self.__path)
+        remain = set(self.__comp_v) - cycle
         st = set()
         end = set()
         for i in range(0, len(self.__path)-1):
-            print(i, ' = i ********')
-            print(self.__path[i],' = path[i]')
-            flag = False
-            epath = []
-            st = self.__G.adj(self.__path[i]) & self.__remain
-            end = self.__G.adj(self.__path[i+1]) & self.__remain
+            st = self.__G.adj(self.__path[i]) & remain
+            end = self.__G.adj(self.__path[i+1]) & remain
             if(len(st)==0 or len(end)==0):
                 print("nonono")
                 continue
@@ -156,104 +145,28 @@ class LCPsolver:
                 print(st, "=st")
                 print(end, "=end")
                 v = 0
-                counter = 0
-                list_ev = []
                 for w in st:
-                    if flag:
-                        print("跳出循环")
-                        break
                     for u in end:
-                        if w != u:
-                            self.__ep_vist = self.__visited[:]
-                            self.__ep_father = [0] * (self.__G.get_adjlen() + 1)
-                            counter = self.__ep_dfs(w, u, self.__path[i])
-                            print(counter,'=counter')
-                            if counter != 0:
-                                print('扩展了%d个点' %(counter))
-                                flag = True
-                                break
+                        if w == u:
+                            v = w
+                            continue
                         else:
-                            list_ev.append(w)   
-                
-                if counter == 0 and len(list_ev) != 0:
-                    v = 0
-                    for j in list_ev:
-                        if j not in self.__cycle:
-                            v = j
-                            break
-                    if v != 0:
-                        self.__visited[v] = True
-                        self.__remain.discard(v)
-                        self.__cycle.add(v)
-                        self.__path2.insert(self.__path2.index(self.__path[i])+1, v)
-                        counter = 1
-                        print(v, '=v,扩展了1个点')
+                            self.__find_path(w, u)
+                                
                     #找两个集合间点的最长路径进行更换
                     #判断两点是否在一个连通片中，不在的话就跳到下一个点
+                    
             #否则搜索path[i]和path[i+1]之间是否可扩展
             #self.__dfs(self.__path[i], self.__path[i+1])
-            
-    def __ep_dfs(self, w, u, stv):
-        self.__ep_vist[w] = True
-        counter = 0
-        epath = []
+    def __find_path(self, w, u):
+        flag = False
         for v in self.__G.adj(w):
-            if self.__ep_vist[v]:   
-                continue
-            self.__ep_father[v] = w    
+            if not visit v:
+                if v == u:
+                    return True
             
-            if u == v:
-                self.__visited[u] = True
-                self.__cycle.add(u)
-                self.__remain.discard(u)
-                counter += 1
-                epath.append(u)
-                m = self.__ep_father[u]
-                while(m != 0):
-                    epath.append(m)
-                    self.__visited[m] = True
-                    self.__cycle.add(m)
-                    self.__remain.discard(m)
-                    m = self.__ep_father[m]
-                    counter += 1
-                if counter != 0:
-                    epath.reverse()
-                    print(epath)
-                    x = 1
-                    for i in epath:
-                        self.__path2.insert(self.__path2.index(stv)+x, i)
-                        x += 1
-                    #print(counter, '=counter')
-                return counter
-            
-            if not self.__ep_vist[v]:
-               counter = self.__ep_dfs(v, u, stv)
-               #print(counter, '===counter')
-               return counter
-        return counter
+        
     
-    def __find_path(self, w, u, epath):
-        self.__visted[w] = True
-        if w not in epath:
-            epath.append(w)
-        if u in epath:
-            #要记录一下
-            return True
-        
-        next_v_list = []
-        for x in self.__G.adj(w):
-            if not self.__visited[w]:
-                next_v_list.append(w)
-        
-        next_v = 0
-        if len(next_v_list) != 0:
-            next_v = random.choice(next_v_list)
-        
-        if next_v !=0:
-            self.__find_path(next_v, u)
-
-        return False
-            
     '''用BFS搜索v和w之间有没有可以扩展的路径'''
     def __bfs(self, v, w):
         pass
@@ -362,11 +275,9 @@ class LCPsolver:
         #print(len(self.__G.get_all_v()))
         print(self.__path)
         print(len(self.__path))
-        print(self.__path2)
-        print(len(self.__path2))
         #print(self.__extend_circle())
         #self.is_hamilton(self.__a)
-        self.is_hamilton(self.__path2)
+        #self.is_hamilton(self.__path)
         setp = set()
         for i in range(0, len(self.__visited)):
             if self.__visited[i] == True:
@@ -399,4 +310,5 @@ if __name__ == '__main__':
     print(counter)
     
     lcpsol.extend_circle()
+    
     lcpsol.result()

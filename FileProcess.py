@@ -1,6 +1,7 @@
 from adjSet import adjSet as Graph
 import re
 import csv
+from collections import Counter
 
 class FilePro():
     def __init__(self, G, cname, root):
@@ -19,7 +20,7 @@ class FilePro():
         '''print(self.__dfn)
         print(self.__low)'''
         # print(self.__G.get_all_edge)
-        #print(self.__G.get_all_edge())
+        # print(self.__G.get_all_edge())
     
     '''删除叶子结点，并将结果保存至preXXX.csv中'''
     def del_leaf(self):
@@ -63,7 +64,7 @@ class FilePro():
                     # print(v,"......")
             else:
                 self.__low[v] = min(self.__low[v], self.__dfn[u])      
-        #print(self.__component.keys())
+        # print(self.__component.keys())
         # 分割图
         # self.comp_divis()
         
@@ -72,14 +73,11 @@ class FilePro():
         for w in list(self.__G.adj(v)):
             if not comp_vis[w]:
                 if w in self.__ans: #这里为何要移动？
-                    #if w != self.__root:
                     self.__ans.remove(w)
-                    print(w, "-=-=")
                 comp_vis[w] = 1
                 if self.__G.has_edge(w, u):         #换边
                     self.__G.remove_edge(w, u)  
                     self.__G.add_edge(w, comp_root)
-                # print(self.__comp_count)
                 self.__comp_count += 1
                 self.comp_dfs(w, u, comp_vis, comp_root)
             
@@ -89,9 +87,7 @@ class FilePro():
             if not comp_vis[w]:
                 if w in self.__ans:
                     self.__ans.remove(w)
-                    print(w,"-=+=")
                 comp_vis[w] = 1
-                # print(self.__comp_count)
                 self.__comp_count += 1
                 self.comp_dfs2(w, comp_vis)
                 
@@ -102,7 +98,7 @@ class FilePro():
             print("该图没有割点")
             return False
         print(self.__root_subtree, ':subtree_root')        #打印子树的根节点
-        print(self.__ans,'~')
+        print(self.__ans, '~')
         
         #先处理root点，因为之前他没得断开
         for v in self.__root_subtree:
@@ -117,7 +113,6 @@ class FilePro():
             comp_vis[v] = 1
             self.__comp_count = 1
             u = self.__component[v]     #u应该是之前连接的割点
-            print(u,'nihao')
             comp_root = v
             self.comp_dfs(v, u, comp_vis, comp_root)    
             self.__component[v] = self.__comp_count
@@ -133,7 +128,15 @@ class FilePro():
             self.__component[v] = self.__comp_count
             print("剩下的点构成一个连通片")
         return True
-
+    
+    '''返回最大连通片的根节点'''
+    def comp_max(self):
+        max_k = -1
+        for k, v in self.__component.items():
+            if v == max(self.__component.values()):
+                max_k = k
+        print(max_k, "max_comp")
+        return max_k
 
     '''处理三角形'''
     def tri_pre(self):
@@ -147,10 +150,8 @@ class FilePro():
         #print(self.__G.E, '=E')
         #print(self.__G.get_all_edge())
         #print(len(self.__G.get_all_edge()))
-        print(list(range(0, 14)))
-        print(self.__dfn)
-        print(self.__low)
-        
+        #print(self.__dfn)
+        #print(self.__low)
 
     
 if __name__ == '__main__':
@@ -165,4 +166,5 @@ if __name__ == '__main__':
     fp.tarjan(root, 0)
     fp.comp_divis()
     fp.show_information()
+    fp.comp_max()
     
