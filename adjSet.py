@@ -93,7 +93,7 @@ class adjSet():
     def remove_vertex(self, v):
         if v in self.__vset:
             self.__vset.discard(v)
-            self.V -= 1
+            self.__V -= 1
         for w in list(self.__adj[v]):
             self.__adj[v].remove(w)
             self.__adj[w].remove(v)
@@ -122,6 +122,6 @@ class adjSet():
         return self.__str__()
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/test.csv'
+    filename = './dataset/pre_dataset/football_pre.csv'
     adj_list = adjSet(filename)
     print(adj_list)

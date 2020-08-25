@@ -6,8 +6,12 @@ from collections import Counter
 class FilePro():
     def __init__(self, G, cname, root):
         self.__G = G
-        self.__csvname= cname
-    
+        self.__pre_csvname = re.search(r'\.[\w\s+/_]*', cname).group() + '_pre.csv'
+        self.__csvname = cname
+        self.__initV = self.__G.V
+        #print(self.__initV,'initV')
+        #self.del_leaf()
+        
         '''tarjan'''
         print(self.__G.V)
         self.__dfn, self.__low = [0]*(self.__G.V+1), [0]*(self.__G.V+1)
@@ -28,15 +32,15 @@ class FilePro():
         flag = False
         while not flag:
             flag = True
-            for v in range(1, self.__G.V+1):
+            for v in range(1, self.__initV+1):
                 if self.__G.degree(v) == 1:
                     self.__G.remove_vertex(v)
                     count += 1
                     flag = False
-        print(count)
-        with open(self.__csvname, 'w', newline='') as sf:
-            self.svwriter = csv.writer(sf) 
-            self.svwriter.writerow([self.__G.V - count])
+        print(count, '= counter')
+        with open(self.__pre_csvname, 'w', newline='') as sf:
+            self.svwriter = csv.writer(sf)
+            #self.svwriter.writerow([self.__G.V - count])
             self.svwriter.writerows(self.__G.get_all_edge())
  
     '''trajan算法找割点，并分割图'''
@@ -76,7 +80,7 @@ class FilePro():
                     self.__ans.remove(w)
                 comp_vis[w] = 1
                 if self.__G.has_edge(w, u):         #换边
-                    self.__G.remove_edge(w, u)  
+                    self.__G.remove_edge(w, u)
                     self.__G.add_edge(w, comp_root)
                 self.__comp_count += 1
                 self.comp_dfs(w, u, comp_vis, comp_root)
@@ -131,7 +135,7 @@ class FilePro():
     
     '''返回最大连通片的根节点'''
     def comp_max(self):
-        max_k = -1
+        max_k = 1
         for k, v in self.__component.items():
             if v == max(self.__component.values()):
                 max_k = k
@@ -155,9 +159,9 @@ class FilePro():
 
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/anna_pre.csv'
+    filename = './dataset/pre_dataset/polbooks_pre.csv'
     '''
-    csvname = re.search(r'\.[\w\s+/_]*', filename).group() + 'anna_pre.csv'
+    csvname = re.search(r'\.[\w\s+/_]*', filename).group() + '_pre.csv'
     print(csvname)
     '''
     root = 13
@@ -167,4 +171,3 @@ if __name__ == '__main__':
     fp.comp_divis()
     fp.show_information()
     fp.comp_max()
-    

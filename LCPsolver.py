@@ -142,13 +142,18 @@ class LCPsolver:
         self.__path2 = self.__path[:]
         st = set()
         end = set()
-        for i in range(0, len(self.__path)-1):
+        for i in range(0, len(self.__path)):
             print(i, ' = i ********')
             print(self.__path[i],' = path[i]')
             flag = False
             epath = []
             st = self.__G.adj(self.__path[i]) & self.__remain
-            end = self.__G.adj(self.__path[i+1]) & self.__remain
+            
+            if i != len(self.__path) - 1:
+                end = self.__G.adj(self.__path[i+1]) & self.__remain
+            else:
+                end = self.__G.adj(self.__path[0]) & self.__remain
+                
             if(len(st)==0 or len(end)==0):
                 print("nonono")
                 continue
@@ -187,11 +192,7 @@ class LCPsolver:
                         self.__cycle.add(v)
                         self.__path2.insert(self.__path2.index(self.__path[i])+1, v)
                         counter = 1
-                        print(v, '=v,扩展了1个点')
-                    #找两个集合间点的最长路径进行更换
-                    #判断两点是否在一个连通片中，不在的话就跳到下一个点
-            #否则搜索path[i]和path[i+1]之间是否可扩展
-            #self.__dfs(self.__path[i], self.__path[i+1])
+                        print(v, '=v,扩展了1个点')        
             
     def __ep_dfs(self, w, u, stv):
         self.__ep_vist[w] = True
@@ -300,11 +301,8 @@ class LCPsolver:
             if self.__record2[w] < 2 and self.__G.degree(w) > max_d:
                 max_d = self.__G.degree(w)
                 rttv = w
-        #print(rttv,'= rttv')
-        #print(self.__G.degree(rttv), '= degree')
-        
+ 
         if rttv == 0:
-            #print("再来一遍！")
             return False
         
         self.__record2[rttv] += 1
@@ -312,9 +310,7 @@ class LCPsolver:
         #旋转变换
         if dic_v[rttv]:
             i = self.__path.index(rttv)    #现在是尾端点节点候选
-            #print(i)
             j = len(self.__path) - 1   
-            #print(j)                     
         else:
             i = 0
             j = self.__path.index(rttv)
@@ -332,7 +328,6 @@ class LCPsolver:
             return False
         else:
             self.__rotation2()
-            #print("没有找到初始圈，可能要回退了")
             return False
 
     def is_hamilton(self, path):
@@ -366,7 +361,7 @@ class LCPsolver:
         print(len(self.__path2))
         #print(self.__extend_circle())
         #self.is_hamilton(self.__a)
-        self.is_hamilton(self.__path2)
+        #self.is_hamilton(self.__path2)
         setp = set()
         for i in range(0, len(self.__visited)):
             if self.__visited[i] == True:
@@ -375,7 +370,7 @@ class LCPsolver:
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/anna_pre.csv'
+    filename = './dataset/pre_dataset/Mmusc20160114CR_pre.csv'
     root = 13
     counter = 1
     a = 1   #参数
