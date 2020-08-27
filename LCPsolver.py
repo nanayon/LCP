@@ -370,7 +370,7 @@ class LCPsolver:
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/Mmusc20160114CR_pre.csv'
+    filename = './dataset/pre_dataset/anna_pre.csv'
     root = 13
     counter = 1
     a = 1   #参数

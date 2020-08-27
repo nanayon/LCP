@@ -11,7 +11,7 @@ class FilePro():
         self.__initV = self.__G.V
         #print(self.__initV,'initV')
         #self.del_leaf()
-        
+        print(self.__G.get_adjlen(), 'adjlen')
         '''tarjan'''
         print(self.__G.V)
         self.__dfn, self.__low = [0]*(self.__G.V+1), [0]*(self.__G.V+1)
@@ -33,7 +33,7 @@ class FilePro():
         while not flag:
             flag = True
             for v in range(1, self.__initV+1):
-                if self.__G.degree(v) == 1:
+                if self.__G.degree(v) <= 1:
                     self.__G.remove_vertex(v)
                     count += 1
                     flag = False
@@ -45,11 +45,13 @@ class FilePro():
  
     '''trajan算法找割点，并分割图'''
     def tarjan(self, v, f):
+        print(v)
         self.__index += 1   #记录访问次序
         self.__dfn[v] = self.__low[v] = self.__index
         child = 0
         if f == self.__root and self.__index > 2:   #root要单独处理，除了第一个遍历的子节点外
            self.__root_subtree.append(v)            #其他子树的根节点加入数组中
+           #这里要不要生成新的结点
             
         for u in list(self.__G.adj(v)):
             child += 1
@@ -58,7 +60,8 @@ class FilePro():
                 self.__low[v] = min(self.__low[v], self.__low[u])
                 if v != self.__root and self.__low[u] >= self.__dfn[v]:
                     self.__ans.add(v)                              #ans中存储的是原图中的割点
-                    self.__G.add_vertex(self.__G.get_adjlen(), u)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
+                    self.__G.add_vertex(self.__G.get_adjlen(), u)  #添加结点, 新节点的序号是原结点数＋1，并在新节点和u之间连边（确定新节点与子树的连接关系）
+                    print(self.__G.get_adjlen()-1, '是新添加的结点')
                     self.__G.remove_edge(v, u)                     #断开原来的连接
                     # print(u)
                     self.__component[self.__adjlen] = v
@@ -67,10 +70,18 @@ class FilePro():
                     self.__ans.add(v)                              #如果根节点是割点，加入ans
                     # print(v,"......")
             else:
-                self.__low[v] = min(self.__low[v], self.__dfn[u])      
+                self.__low[v] = min(self.__low[v], self.__dfn[u])
+        print(self.__ans)
+        print(self.__root_subtree)
         # print(self.__component.keys())
         # 分割图
         # self.comp_divis()
+    '''找连通分量'''
+    def comp_dfs0(self):
+        print(self.__G.get_adjlen(), 'adjlen')
+        for i in range(1, self.__G.get_adjlen()):
+            pass
+        pass
         
     #从某个结点开始进行深度遍历
     def comp_dfs(self, v, u, comp_vis, comp_root): 
@@ -94,7 +105,6 @@ class FilePro():
                 comp_vis[w] = 1
                 self.__comp_count += 1
                 self.comp_dfs2(w, comp_vis)
-                
     
     '''根据割点分裂图'''
     def comp_divis(self):
@@ -108,9 +118,9 @@ class FilePro():
         for v in self.__root_subtree:
             self.__G.add_vertex(self.__G.get_adjlen(), v)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
             self.__G.remove_edge(v, self.__root)           #断开原来的连接
-            self.__component[self.__adjlen] = v
+            self.__component[self.__adjlen] = self.__root
             self.__adjlen += 1
-            
+        
         print(self.__component.keys())                          #打印连通分支的根节点
         comp_vis = [0] * ((max(self.__component.keys())) + 1)   #寻找遍历连通分支用，并增加和断开一些连边
         for v in self.__component.keys():
@@ -122,6 +132,7 @@ class FilePro():
             self.__component[v] = self.__comp_count
         
         #判断ans中剩下的结点是否在一个连通片
+        '''
         v = self.__ans.pop()
         print(v)
         comp_vis[v] = 1
@@ -131,6 +142,7 @@ class FilePro():
         if len(self.__ans) == 0:
             self.__component[v] = self.__comp_count
             print("剩下的点构成一个连通片")
+        '''
         return True
     
     '''返回最大连通片的根节点'''
@@ -159,15 +171,19 @@ class FilePro():
 
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/polbooks_pre.csv'
+    filename = './dataset/pre_dataset/test.csv'
     '''
     csvname = re.search(r'\.[\w\s+/_]*', filename).group() + '_pre.csv'
     print(csvname)
     '''
-    root = 13
+    root = 6
     graph = Graph(filename)
     fp = FilePro(graph, filename, root)
     fp.tarjan(root, 0)
+    
     fp.comp_divis()
+    
     fp.show_information()
     fp.comp_max()
+    
+    
