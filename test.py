@@ -1,314 +1,218 @@
 from adjSet import adjSet as Graph
-from FileProcess import FilePro
-import random
+import re
+import csv
+from collections import Counter
 
-class LCPsolver:
-    def __init__(self, G):
+class FilePro():
+    def __init__(self, G, cname, root):
         self.__G = G
-        self.__visited = [False] * (self.__G.get_adjlen() + 1)
-        self.__comp_vist = [False] * (self.__G.get_adjlen() + 1)
-        self.__record = [0] * (G.V + 1)
-        self.__record2 = [0] * (G.V + 1)
-        self.__path = []
-        self.__insert_path = []
-        self.__comp_v = set()
-        self.__stvcounter = 0
-        self.__a = 1 #控制长度的参数
-
-    def reset(self):
-        self.__visited = [False] * (self.__G.get_adjlen() + 1)
-        self.__record = [0] * (self.__G.V + 1)
-        self.__record2 = [0] * (self.__G.V + 1)
-        self.__path = []
-        self.__stvcounter = 0
-
-    def set_a(self, value):
-        self.__a = value
+        self.__pre_csvname = re.search(r'\.[\w\s+/_]*', cname).group() + '_pre.csv'
+        self.__csvname = cname
+        self.__initV = self.__G.V
+        self.__visited = [False] * self.__G.get_adjlen()
+        self.__counter = 0
+        #print(self.__initV,'initV')
+        #self.del_leaf()
+        #print(self.__G.get_adjlen(), 'adjlen')
+        '''tarjan'''
+        #print(self.__G.V)
+        self.__dfn, self.__low = [0]*(self.__G.V+1), [0]*(self.__G.V+1)
+        self.__index, self.__root = 0, root
+        self.__ans = set()                      #保存割点结果
+        self.__root_subtree = []                #分割后新生成的点作为该连通片的root结点
+        self.__fcomponent = dict()
+        self.__component = dict()               #连通分量信息
+        self.__adjlen = self.__G.get_adjlen()
+        self.__comp_count = 0
+        '''print(self.__dfn)
+        print(self.__low)'''
+        # print(self.__G.get_all_edge)
+        # print(self.__G.get_all_edge())
         
-    '''深度优先找到一个初始路径'''
-    def dfs(self, v):
-        self.__visited[v] = True
+    def set_root(self, root):
+        self.__root = root
         
-        if v not in self.__path:
-            self.__path.append(v)
-        
-        if len(self.__path) >= self.__G.get_adjlen() * self.__a and self.__G.has_edge(self.__path[-1], self.__path[0]):
-            print("找到一个初始圈")
-            return True
-        
-        next_v_list = []
-        for w in self.__G.adj(v):
-            if not self.__visited[w]:
-                next_v_list.append(w)
-
-        next_v = 0
-        if len(next_v_list) != 0:
-            next_v = random.choice(next_v_list)
-        
-        if next_v != 0:         #有未被访问的邻接点
-            self.dfs(next_v)
-        else:
-            self.__record[self.__path[-1]] += 1
-            self.__rotation()
-            
-        if self.__G.has_edge(self.__path[-1], self.__path[0]):
-            return True
-        
-        return False
-    
-    '''获取连通片内的所有点'''
-    def comp_dfs(self, v):
-        self.__comp_vist[v] = True
-        self.__comp_v.add(v)
-        for w in self.__G.adj(v):
-            if not self.__comp_vist[w]:
-                self.comp_dfs(w)
-    
-    def __rotation(self):
-        rttv_list = []                              #选择转置结点
-        for w in self.__G.adj(self.__path[-1]):     #找末端节点的邻居节点
-            if self.__visited[w]:
-                rttv_list.append(w)
-        
-        # 还要检查一下是否能进行旋转变换
-        if not rttv_list:
-            return False
-        
-        rttv = 0
-        #选具体的端点,选出一个就好
-        #如果有可到达的端点，直接选这个可到达的，否则选record次数最小的
-        for w in rttv_list:   
-            i = self.__path.index(w) + 1                    #现在是尾端点节点候选，就是当前w在path中的邻居结点
-            if not self.__unreachable(self.__path[i]):      #检测新的尾端点是否可到达，检测到可达顶点就跳出
-                rttv = self.__path[i]
-                break
-            
-        # 如果没有可达顶点,我觉得应该退回上一步，换策略
-        # 那么就只好将不可达的顶点作为结束顶点，然后祈祷一下，在经过为数不多的转置后能够重新出现可达顶点   
-        if not rttv:
-            min_record = 3
-            min_v = 0
-            for w in rttv_list:   #应该是检测在path中w的邻居结点
-                i = self.__path.index(w)+1
-                if self.__record[self.__path[i]] <= min_record:
-                    min_record = self.__record[self.__path[i]]
-                    min_v = self.__path[i]
-            rttv = min_v
-            if min_record >= 3 and self.__stvcounter <= 3:
-               self.__stvcounter += 1
-               rttv = self.__path[0] #stv
-        
-        if not rttv:
-            if self.__G.has_edge(self.__path[-1], self.__path[0]):
-                print("找到一个初始圈")
-                return True
-            else:
-                self.__rotation2()
-                return False
-        
-        #旋转变换
-        i = self.__path.index(rttv)    #现在是尾端点节点候选
-        j = len(self.__path) - 1   
-        while(i < j):
-            temp = self.__path[i] 
-            self.__path[i] = self.__path[j]
-            self.__path[j] = temp
-            i = i + 1
-            j = j - 1
-        if self.dfs(self.__path[-1]):
-            return True
-    
-    '''按度的大小排列'''
-    def __sort_degree(self):
-        dic = {}
-        for i in range(1, self.__G.V):
-            dic[i] = self.__G.degree(i)
-        list_v = sorted(dic.items(), key = lambda kv:kv[1], reverse = True)
-            
-        return list_v
-    '''想办法转置度最大的结点到首末端'''
-    '''把剩下的结点转化为圈'''
-    
-    '''扩展圈'''
-    def extend_circle(self):
-        cycle = set(self.__path)
-        remain = set(self.__comp_v) - cycle
-        st = set()
-        end = set()
-        for i in range(0, len(self.__path)-1):
-            st = self.__G.adj(self.__path[i]) & remain
-            end = self.__G.adj(self.__path[i+1]) & remain
-            if(len(st)==0 or len(end)==0):
-                print("nonono")
-                continue
-            else:
-                print(st, "=st")
-                print(end, "=end")
-                v = 0
-                for w in st:
-                    for u in end:
-                        if w == u:
-                            v = w
-                            continue
-                        else:
-                            self.__find_path(w, u)
-                                
-                    #找两个集合间点的最长路径进行更换
-                    #判断两点是否在一个连通片中，不在的话就跳到下一个点
-                    
-            #否则搜索path[i]和path[i+1]之间是否可扩展
-            #self.__dfs(self.__path[i], self.__path[i+1])
-    def __find_path(self, w, u):
+    '''删除叶子结点，并将结果保存至preXXX.csv中'''
+    def del_leaf(self):
+        count = 0
         flag = False
-        for v in self.__G.adj(w):
-            if not visit v:
-                if v == u:
-                    return True
+        while not flag:
+            flag = True
+            for v in range(1, self.__initV+1):
+                if self.__G.degree(v) <= 1:
+                    self.__G.remove_vertex(v)
+                    count += 1
+                    flag = False
+        #print(count, '= counter')
+        with open(self.__pre_csvname, 'w', newline='') as sf:
+            self.svwriter = csv.writer(sf)
+            #self.svwriter.writerow([self.__G.V - count])
+            self.svwriter.writerows(self.__G.get_all_edge())
+ 
+    '''trajan算法找割点，并分割图'''
+    def tarjan(self, v, f):
+        # print(v)
+        self.__index += 1   #记录访问次序
+        self.__dfn[v] = self.__low[v] = self.__index
+        child = 0
+        if f == self.__root and self.__index > 2:   #root要单独处理，除了第一个遍历的子节点外
+           self.__root_subtree.append(v)            #其他子树的根节点加入数组中
+           #这里要不要生成新的结点
             
-        
-    
-    '''用BFS搜索v和w之间有没有可以扩展的路径'''
-    def __bfs(self, v, w):
-        pass
-    
-    '''用DFS搜索v和w之间有没有可以扩展的路径'''
-    def __dfs(self, v, w):
-        lenv = 0
-        for u in self.__G.adj(v):
-            if not self.__visited[u]:
-                self.__visited[u] = True
-                self.__insert_path.append(u)                    
-                if self.__G.has_edge(u, w): 
-                    print("great@_@")
-                    print(self.__insert_path, '=ipath')
-                    return
-                self.__dfs(u, w)
-
-    #将初始路径转换为初始圈
-    def __rotation2(self):
-        self.__stvcounter += 1
-        #print(self.__path)
-        rttv_list = []                              
-        for w in self.__G.adj(self.__path[-1]):     #找末端节点的邻居节点
-            if self.__visited[w]:
-                rttv_list.append(w)
-        di_index = len(rttv_list)   
-        for w in self.__G.adj(self.__path[0]):
-            if self.__visited[w]:
-                rttv_list.append(w)
-        # print(rttv_list)
-
-        dic_v = dict()
-        for w in rttv_list[0: di_index]:  
-            i = self.__path.index(w) + 1                    # 现在是尾端点节点候选，就是当前w在path中的邻居结点
-            dic_v[self.__path[i]] = True                    # 现在找的是end端的
-        for w in rttv_list[di_index:]:                      # start端
-            i = self.__path.index(w) - 1
-            dic_v[self.__path[i]] = False
-                
-        rttv = 0
-        max_d = 0
-        flag = True                         #如果度最大点是尾端结点
-        for w in dic_v.keys():
-            if self.__record2[w] < 2 and self.__G.degree(w) > max_d:
-                max_d = self.__G.degree(w)
-                rttv = w
-        #print(rttv,'= rttv')
-        #print(self.__G.degree(rttv), '= degree')
-        
-        if rttv == 0:
-            #print("再来一遍！")
-            return False
-        
-        self.__record2[rttv] += 1
-
-        #旋转变换
-        if dic_v[rttv]:
-            i = self.__path.index(rttv)    #现在是尾端点节点候选
-            #print(i)
-            j = len(self.__path) - 1   
-            #print(j)                     
-        else:
-            i = 0
-            j = self.__path.index(rttv)
-            pass
-        while(i < j):
-            temp = self.__path[i] 
-            self.__path[i] = self.__path[j]
-            self.__path[j] = temp
-            i = i + 1
-            j = j - 1
-        if self.__G.has_edge(self.__path[-1], self.__path[0]):
-            print("找到一个初始圈")
-            return True      
-        elif self.__stvcounter >= 100:
-            return False
-        else:
-            self.__rotation2()
-            #print("没有找到初始圈，可能要回退了")
-            return False
-
-    def is_hamilton(self, path):
-        i = 0
-        end = True
-        while(i < len(path)-1):
-            if not self.__G.has_edge(path[i], path[i+1]):
-                print("%d-X-%d" %(path[i], path[i+1]))
-                end = False
-            i = i + 1
-        if end:
-            if self.__G.has_edge(path[0],path[-1]):
-                   print("成功了！")
+        for u in list(self.__G.adj(v)):
+            child += 1
+            if not self.__dfn[u]:
+                self.tarjan(u, v)
+                self.__low[v] = min(self.__low[v], self.__low[u])
+                if v != self.__root and self.__low[u] >= self.__dfn[v]:
+                    self.__ans.add(v)                              #ans中存储的是原图中的割点
+                    self.__G.add_vertex(self.__G.get_adjlen(), u)  #添加结点, 新节点的序号是原结点数＋1，并在新节点和u之间连边（确定新节点与子树的连接关系）
+                    # print(self.__G.get_adjlen()-1, '是新添加的结点')
+                    self.__G.remove_edge(v, u)                     #断开原来的连接
+                    # print(u)
+                    self.__component[self.__adjlen] = v
+                    self.__adjlen += 1
+                if v == self.__root and child >= 2:
+                    self.__ans.add(v)                              #如果根节点是割点，加入ans
+                    # print(v,"......")
             else:
-                   print("只能找到路径")
-        return end
-            
-    """检测不可达顶点"""
-    def __unreachable(self, v):
+                self.__low[v] = min(self.__low[v], self.__dfn[u])
+        # print(self.__ans)
+        # print(self.__root_subtree)
+        # print(self.__component.keys())
+        # 分割图
+        # self.comp_divis()
+    def find_comp(self):
+        for i in range(1,self.__G.get_adjlen()):
+            self.__counter = 0
+            if self.__visited[i]:
+                continue
+            self.comp_dfs0(i)
+            self.__fcomponent[i] = self.__counter
+    
+    '''找连通分量'''
+    def comp_dfs0(self, v):
+        self.__visited[v] = True
+        self.__counter += 1
         for w in self.__G.adj(v):
             if not self.__visited[w]:
-                return False
+                self.comp_dfs0(w)
+            
+    #从某个结点开始进行深度遍历
+    def comp_dfs(self, v, u, comp_vis, comp_root): 
+        for w in list(self.__G.adj(v)):
+            if not comp_vis[w]:
+                if w in self.__ans: #这里为何要移动？
+                    self.__ans.remove(w)
+                comp_vis[w] = 1
+                if self.__G.has_edge(w, u):                     #换边
+                    self.__G.remove_edge(w, u)
+                    self.__G.add_edge(w, comp_root)
+                self.__comp_count += 1
+                self.comp_dfs(w, u, comp_vis, comp_root)
+            
+    # 判断anser中剩下的结点是否在一个联通分片里
+    def comp_dfs2(self, v, comp_vis): 
+        for w in list(self.__G.adj(v)):
+            if not comp_vis[w]:
+                if w in self.__ans:
+                    self.__ans.remove(w)
+                comp_vis[w] = 1
+                self.__comp_count += 1
+                self.comp_dfs2(w, comp_vis)
+    
+    '''根据割点分裂图'''
+    def comp_divis(self):
+        if len(self.__ans) == 0:
+            print("该图没有割点")
+            return False
+        #print(self.__root_subtree, ':subtree_root')        #打印子树的根节点
+        #print(self.__ans, '~')
+        
+        #先处理root点，因为之前他没得断开,这里有问题
+        for v in self.__root_subtree:
+            self.__G.add_vertex(self.__G.get_adjlen(), v)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
+            self.__G.remove_edge(v, self.__root)           #断开原来的连接
+            self.__component[self.__adjlen] = self.__root
+            self.__adjlen += 1
+        
+        #print(self.__component.keys())                          #打印连通分支的根节点
+        comp_vis = [0] * ((max(self.__component.keys())) + 1)   #寻找遍历连通分支用，并增加和断开一些连边
+        for v in self.__component.keys():
+            comp_vis[v] = 1
+            self.__comp_count = 1
+            u = self.__component[v]     #u应该是之前连接的割点
+            comp_root = v
+            self.comp_dfs(v, u, comp_vis, comp_root)    
+            self.__component[v] = self.__comp_count
+        
+        #判断ans中剩下的结点是否在一个连通片
+        '''
+        v = self.__ans.pop()
+        print(v)
+        comp_vis[v] = 1
+        self.__comp_count = 1
+        self.comp_dfs2(v, comp_vis)
+        
+        if len(self.__ans) == 0:
+            self.__component[v] = self.__comp_count
+            print("剩下的点构成一个连通片")
+        '''
         return True
     
-    def result(self):
-        #print(self.__G.get_all_v())
+    '''返回最大连通片的根节点'''
+    def fcomp_max(self):
+        max_k = 1
+        for k, v in self.__fcomponent.items():
+            if v == max(self.__fcomponent.values()):
+                max_k = k
+        print(max_k, "max_fcomp")
+        return max_k
+    
+    '''返回最大连通片的根节点'''
+    def comp_max(self):
+        max_k = 1
+        for k, v in self.__component.items():
+            if v == max(self.__component.values()):
+                max_k = k
+        print(max_k, "max_comp")
+        return max_k
+
+    '''处理三角形'''
+    def tri_pre(self):
+        pass
+    
+    def show_information(self):
+        print(self.__ans)
+        print(self.__fcomponent)
+        print(self.__component)
+        #print(self.__G.V, '=V')
         #print(len(self.__G.get_all_v()))
-        print(self.__path)
-        print(len(self.__path))
-        #print(self.__extend_circle())
-        #self.is_hamilton(self.__a)
-        #self.is_hamilton(self.__path)
-        setp = set()
-        for i in range(0, len(self.__visited)):
-            if self.__visited[i] == True:
-                setp.add(i)
-        print(setp - set(self.__path))
-                
-        
+        #print(self.__G.E, '=E')
+        #print(self.__G.get_all_edge())
+        #print(len(self.__G.get_all_edge()))
+        #print(self.__dfn)
+        #print(self.__low)
+    
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/anna_pre.csv'
-    root = 13
-    counter = 1
-    a = 1   #参数
+    filename = './dataset/pre_dataset/test.csv'
+    '''
+    csvname = re.search(r'\.[\w\s+/_]*', filename).group() + '_pre.csv'
+    print(csvname)
+    '''
+    root = 6
     graph = Graph(filename)
     fp = FilePro(graph, filename, root)
+    '''
+    fp.find_comp()
+    root = fp.fcomp_max()
+    fp.show_information()
+    print(root, 'root')
+    # fp.set_root(root)
+    '''
     fp.tarjan(root, 0)
     fp.comp_divis()
-    comp_root = fp.comp_max()
-    lcpsol = LCPsolver(graph)
-    lcpsol.comp_dfs(comp_root)
-    flag = lcpsol.dfs(comp_root)
-    while not flag and counter <= 90:
-        for i in range(0, 10):
-            lcpsol.reset()
-            flag = lcpsol.dfs(comp_root)
-            counter += 1
-        a -= 0.1
-        lcpsol.set_a(a)
-    print(a)
-    print(flag)
-    print(counter)
+    fp.show_information()
+    fp.comp_max()
+    print(root, 'root')
     
-    lcpsol.extend_circle()
-    
-    lcpsol.result()

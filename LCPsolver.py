@@ -370,15 +370,21 @@ class LCPsolver:
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/anna_pre.csv'
-    root = 13
+    filename = './dataset/pre_dataset/football_pre.csv'
+    root = 8
     counter = 1
     a = 1   #参数
     graph = Graph(filename)
     fp = FilePro(graph, filename, root)
+    '''
+    fp.find_comp()          #找连通分片
+    root = fp.fcomp_max()   #找最大连通分片根节点
+    fp.set_root(root)       #设置新的根节点
+    '''
     fp.tarjan(root, 0)
     fp.comp_divis()
     comp_root = fp.comp_max()
+    
     lcpsol = LCPsolver(graph)
     lcpsol.comp_dfs(comp_root)
     flag = lcpsol.dfs(comp_root)
@@ -389,9 +395,12 @@ if __name__ == '__main__':
             counter += 1
         a -= 0.1
         lcpsol.set_a(a)
+        
     print(a)
     print(flag)
     print(counter)
     
     lcpsol.extend_circle()
+    print(comp_root,'232')
     lcpsol.result()
+    

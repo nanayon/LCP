@@ -9,23 +9,29 @@ class FilePro():
         self.__pre_csvname = re.search(r'\.[\w\s+/_]*', cname).group() + '_pre.csv'
         self.__csvname = cname
         self.__initV = self.__G.V
+        self.__visited = [False] * self.__G.get_adjlen()
+        self.__counter = 0
         #print(self.__initV,'initV')
         #self.del_leaf()
-        print(self.__G.get_adjlen(), 'adjlen')
+        #print(self.__G.get_adjlen(), 'adjlen')
         '''tarjan'''
-        print(self.__G.V)
+        #print(self.__G.V)
         self.__dfn, self.__low = [0]*(self.__G.V+1), [0]*(self.__G.V+1)
         self.__index, self.__root = 0, root
         self.__ans = set()                      #保存割点结果
         self.__root_subtree = []                #分割后新生成的点作为该连通片的root结点
+        self.__fcomponent = dict()
         self.__component = dict()               #连通分量信息
         self.__adjlen = self.__G.get_adjlen()
-        self.__comp_count = 0 
+        self.__comp_count = 0
         '''print(self.__dfn)
         print(self.__low)'''
         # print(self.__G.get_all_edge)
         # print(self.__G.get_all_edge())
-    
+        
+    def set_root(self, root):
+        self.__root = root
+        
     '''删除叶子结点，并将结果保存至preXXX.csv中'''
     def del_leaf(self):
         count = 0
@@ -37,7 +43,7 @@ class FilePro():
                     self.__G.remove_vertex(v)
                     count += 1
                     flag = False
-        print(count, '= counter')
+        #print(count, '= counter')
         with open(self.__pre_csvname, 'w', newline='') as sf:
             self.svwriter = csv.writer(sf)
             #self.svwriter.writerow([self.__G.V - count])
@@ -45,7 +51,7 @@ class FilePro():
  
     '''trajan算法找割点，并分割图'''
     def tarjan(self, v, f):
-        print(v)
+        # print(v)
         self.__index += 1   #记录访问次序
         self.__dfn[v] = self.__low[v] = self.__index
         child = 0
@@ -61,7 +67,7 @@ class FilePro():
                 if v != self.__root and self.__low[u] >= self.__dfn[v]:
                     self.__ans.add(v)                              #ans中存储的是原图中的割点
                     self.__G.add_vertex(self.__G.get_adjlen(), u)  #添加结点, 新节点的序号是原结点数＋1，并在新节点和u之间连边（确定新节点与子树的连接关系）
-                    print(self.__G.get_adjlen()-1, '是新添加的结点')
+                    # print(self.__G.get_adjlen()-1, '是新添加的结点')
                     self.__G.remove_edge(v, u)                     #断开原来的连接
                     # print(u)
                     self.__component[self.__adjlen] = v
@@ -71,18 +77,27 @@ class FilePro():
                     # print(v,"......")
             else:
                 self.__low[v] = min(self.__low[v], self.__dfn[u])
-        print(self.__ans)
+        # print(self.__ans)
         print(self.__root_subtree)
         # print(self.__component.keys())
         # 分割图
         # self.comp_divis()
+    def find_comp(self):
+        for i in range(1,self.__G.get_adjlen()):
+            self.__counter = 0
+            if self.__visited[i]:
+                continue
+            self.comp_dfs0(i)
+            self.__fcomponent[i] = self.__counter
+    
     '''找连通分量'''
-    def comp_dfs0(self):
-        print(self.__G.get_adjlen(), 'adjlen')
-        for i in range(1, self.__G.get_adjlen()):
-            pass
-        pass
-        
+    def comp_dfs0(self, v):
+        self.__visited[v] = True
+        self.__counter += 1
+        for w in self.__G.adj(v):
+            if not self.__visited[w]:
+                self.comp_dfs0(w)
+            
     #从某个结点开始进行深度遍历
     def comp_dfs(self, v, u, comp_vis, comp_root): 
         for w in list(self.__G.adj(v)):
@@ -90,7 +105,7 @@ class FilePro():
                 if w in self.__ans: #这里为何要移动？
                     self.__ans.remove(w)
                 comp_vis[w] = 1
-                if self.__G.has_edge(w, u):         #换边
+                if self.__G.has_edge(w, u):                     #换边
                     self.__G.remove_edge(w, u)
                     self.__G.add_edge(w, comp_root)
                 self.__comp_count += 1
@@ -114,14 +129,15 @@ class FilePro():
         print(self.__root_subtree, ':subtree_root')        #打印子树的根节点
         print(self.__ans, '~')
         
-        #先处理root点，因为之前他没得断开
+        #先处理root点，因为之前他没得断开,这里有问题
         for v in self.__root_subtree:
             self.__G.add_vertex(self.__G.get_adjlen(), v)  #添加结点, 并在新节点和u之间连边（确定新节点与子树的连接关系）
             self.__G.remove_edge(v, self.__root)           #断开原来的连接
             self.__component[self.__adjlen] = self.__root
             self.__adjlen += 1
-        
-        print(self.__component.keys())                          #打印连通分支的根节点
+        print(self.__component, ':component')
+
+        #print(self.__component.keys())                          #打印连通分支的根节点
         comp_vis = [0] * ((max(self.__component.keys())) + 1)   #寻找遍历连通分支用，并增加和断开一些连边
         for v in self.__component.keys():
             comp_vis[v] = 1
@@ -131,8 +147,7 @@ class FilePro():
             self.comp_dfs(v, u, comp_vis, comp_root)    
             self.__component[v] = self.__comp_count
         
-        #判断ans中剩下的结点是否在一个连通片
-        '''
+        #判断ans中剩下的结点是否在一个连通片,这里不能删，判断可以删
         v = self.__ans.pop()
         print(v)
         comp_vis[v] = 1
@@ -141,9 +156,18 @@ class FilePro():
         
         if len(self.__ans) == 0:
             self.__component[v] = self.__comp_count
-            print("剩下的点构成一个连通片")
-        '''
+            #print("剩下的点构成一个连通片")
+        
         return True
+    
+    '''返回最大连通片的根节点'''
+    def fcomp_max(self):
+        max_k = 1
+        for k, v in self.__fcomponent.items():
+            if v == max(self.__fcomponent.values()):
+                max_k = k
+        print(max_k, "max_fcomp")
+        return max_k
     
     '''返回最大连通片的根节点'''
     def comp_max(self):
@@ -160,6 +184,7 @@ class FilePro():
     
     def show_information(self):
         print(self.__ans)
+        print(self.__fcomponent)
         print(self.__component)
         #print(self.__G.V, '=V')
         #print(len(self.__G.get_all_v()))
@@ -168,22 +193,28 @@ class FilePro():
         #print(len(self.__G.get_all_edge()))
         #print(self.__dfn)
         #print(self.__low)
-
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/test.csv'
+    filename = './dataset/pre_dataset/anna_pre.csv'
     '''
     csvname = re.search(r'\.[\w\s+/_]*', filename).group() + '_pre.csv'
     print(csvname)
     '''
-    root = 6
+    root = 10
     graph = Graph(filename)
     fp = FilePro(graph, filename, root)
+    
+
+    fp.find_comp()
+    root = fp.fcomp_max()
+    fp.show_information()
+    print(root, 'root')
+    fp.set_root(root)
+
+    
     fp.tarjan(root, 0)
-    
     fp.comp_divis()
-    
     fp.show_information()
     fp.comp_max()
-    
-    
+    print(root, 'root')
+ 
