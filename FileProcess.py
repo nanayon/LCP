@@ -78,7 +78,7 @@ class FilePro():
             else:
                 self.__low[v] = min(self.__low[v], self.__dfn[u])
         # print(self.__ans)
-        print(self.__root_subtree)
+        # print(self.__root_subtree)
         # print(self.__component.keys())
         # 分割图
         # self.comp_divis()

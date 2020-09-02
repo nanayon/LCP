@@ -106,7 +106,7 @@ class LCPsolver:
         
         if not rttv:
             if self.__G.has_edge(self.__path[-1], self.__path[0]):
-                print("找到一个初始圈")
+                #print("找到一个初始圈")
                 return True
             else:
                 self.__rotation2()
@@ -134,31 +134,32 @@ class LCPsolver:
         return list_v
     '''想办法转置度最大的结点到首末端'''
     '''把剩下的结点转化为圈'''
-    
-    '''扩展圈'''
-    def extend_circle(self):
+                        
+    def init_cgc(self):
         self.__cycle = set(self.__path)
         self.__remain = set(self.__comp_v) - self.__cycle
         self.__path2 = self.__path[:]
+        
+    def change_circle(self, space):
+        self.__path = self.__path2[:]
         st = set()
         end = set()
         for i in range(0, len(self.__path)):
-            print(i, ' = i ********')
-            print(self.__path[i],' = path[i]')
+            # print(i, ' = i ********')
+            # print(self.__path[i],' = path[i]')
             flag = False
             epath = []
             st = self.__G.adj(self.__path[i]) & self.__remain
+            index = (i+space+1) % len(self.__path)
+            end = self.__G.adj(self.__path[index]) & self.__remain
             
-            if i != len(self.__path) - 1:
-                end = self.__G.adj(self.__path[i+1]) & self.__remain
-            else:
-                end = self.__G.adj(self.__path[0]) & self.__remain
-                
             if(len(st)==0 or len(end)==0):
-                print("nonono")
+                # print("nonono")
                 continue
             else:
+                print('path[%d]=%d' %(i, self.__path[i]))
                 print(st, "=st")
+                print('path[%d]=%d' %(index, self.__path[index]))
                 print(end, "=end")
                 v = 0
                 counter = 0
@@ -171,16 +172,20 @@ class LCPsolver:
                         if w != u:
                             self.__ep_vist = self.__visited[:]
                             self.__ep_father = [0] * (self.__G.get_adjlen() + 1)
-                            counter = self.__ep_dfs(w, u, self.__path[i])
-                            print(counter,'=counter')
-                            if counter != 0:
+                            counter = self.__cg_dfs(w, u, self.__path[i], space)
+                            # print(counter, '=counter')
+                            if counter > space:
                                 print('扩展了%d个点' %(counter))
                                 flag = True
                                 break
+                            elif counter == space and space!=0:
+                                print('更换了%d个点' %(counter))
+                                flag = True
+                                break
                         else:
-                            list_ev.append(w)   
-                
-                if counter == 0 and len(list_ev) != 0:
+                            list_ev.append(w)
+                            
+                if counter == 0 and len(list_ev) != 0 and space == 0:
                     v = 0
                     for j in list_ev:
                         if j not in self.__cycle:
@@ -192,43 +197,43 @@ class LCPsolver:
                         self.__cycle.add(v)
                         self.__path2.insert(self.__path2.index(self.__path[i])+1, v)
                         counter = 1
-                        print(v, '=v,扩展了1个点')        
-            
-    def __ep_dfs(self, w, u, stv):
+                        print(v, '=v, 扩展了1个点')  
+
+    def __cg_dfs(self, w, u, stv, space):
         self.__ep_vist[w] = True
         counter = 0
         epath = []
+             
         for v in self.__G.adj(w):
-            if self.__ep_vist[v]:   
+            if self.__ep_vist[v]:
                 continue
-            self.__ep_father[v] = w    
+            self.__ep_father[v] = w
             
             if u == v:
-                self.__visited[u] = True
-                self.__cycle.add(u)
-                self.__remain.discard(u)
-                counter += 1
                 epath.append(u)
                 m = self.__ep_father[u]
+                counter += 1
                 while(m != 0):
                     epath.append(m)
-                    self.__visited[m] = True
-                    self.__cycle.add(m)
-                    self.__remain.discard(m)
                     m = self.__ep_father[m]
                     counter += 1
-                if counter != 0:
+                if counter >= space:
                     epath.reverse()
                     print(epath)
                     x = 1
+                    index = self.__path2.index(stv)
+                    del self.__path2[index+1: index+1+space]
                     for i in epath:
                         self.__path2.insert(self.__path2.index(stv)+x, i)
                         x += 1
+                        self.__visited[i] = True
+                        self.__cycle.add(i)
+                        self.__remain.discard(i)
                     #print(counter, '=counter')
                 return counter
             
             if not self.__ep_vist[v]:
-               counter = self.__ep_dfs(v, u, stv)
+               counter = self.__cg_dfs(v, u, stv, space)
                #print(counter, '===counter')
                return counter
         return counter
@@ -361,26 +366,21 @@ class LCPsolver:
         print(len(self.__path2))
         #print(self.__extend_circle())
         #self.is_hamilton(self.__a)
-        #self.is_hamilton(self.__path2)
-        setp = set()
-        for i in range(0, len(self.__visited)):
-            if self.__visited[i] == True:
-                setp.add(i)
-        print(setp - set(self.__path))
+        self.is_hamilton(self.__path2)
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/football_pre.csv'
+    filename = './dataset/pre_dataset/anna_pre.csv'
     root = 8
     counter = 1
     a = 1   #参数
     graph = Graph(filename)
     fp = FilePro(graph, filename, root)
-    '''
+    
     fp.find_comp()          #找连通分片
     root = fp.fcomp_max()   #找最大连通分片根节点
     fp.set_root(root)       #设置新的根节点
-    '''
+    
     fp.tarjan(root, 0)
     fp.comp_divis()
     comp_root = fp.comp_max()
@@ -400,7 +400,26 @@ if __name__ == '__main__':
     print(flag)
     print(counter)
     
-    lcpsol.extend_circle()
+    # lcpsol.extend_circle()
+    lcpsol.init_cgc()
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(1)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(2)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(1)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(2)
+    lcpsol.change_circle(1)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(3)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(1)
+    lcpsol.change_circle(0)
+    lcpsol.change_circle(3)
+    lcpsol.change_circle(0)
+
+    
     print(comp_root,'232')
     lcpsol.result()
     
