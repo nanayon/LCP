@@ -135,7 +135,7 @@ class FilePro():
             self.__G.remove_edge(v, self.__root)           #断开原来的连接
             self.__component[self.__adjlen] = self.__root
             self.__adjlen += 1
-        print(self.__component, ':component')
+        #print(self.__component, ':component')
 
         #print(self.__component.keys())                          #打印连通分支的根节点
         comp_vis = [0] * ((max(self.__component.keys())) + 1)   #寻找遍历连通分支用，并增加和断开一些连边

@@ -20,6 +20,7 @@ class LCPsolver:
         self.__a = 1 #控制长度的参数
         self.__cycle = set()
         self.__remain = set()
+        self.judge = True  #判断扩展圈操作是否起作用
         
     def reset(self):
         self.__visited = [False] * (self.__G.get_adjlen() + 1)
@@ -39,7 +40,7 @@ class LCPsolver:
             self.__path.append(v)
         
         if len(self.__path) >= self.__G.get_adjlen() * self.__a and self.__G.has_edge(self.__path[-1], self.__path[0]):
-            print("找到一个初始圈")
+            # print("找到一个初始圈")
             return True
         
         next_v_list = []
@@ -124,160 +125,7 @@ class LCPsolver:
         if self.dfs(self.__path[-1]):
             return True
     
-    '''按度的大小排列'''
-    def __sort_degree(self):
-        dic = {}
-        for i in range(1, self.__G.V):
-            dic[i] = self.__G.degree(i)
-        list_v = sorted(dic.items(), key = lambda kv:kv[1], reverse = True)
-            
-        return list_v
-    '''想办法转置度最大的结点到首末端'''
-    '''把剩下的结点转化为圈'''
-                        
-    def init_cgc(self):
-        self.__cycle = set(self.__path)
-        self.__remain = set(self.__comp_v) - self.__cycle
-        self.__path2 = self.__path[:]
-        
-    def change_circle(self, space):
-        self.__path = self.__path2[:]
-        st = set()
-        end = set()
-        for i in range(0, len(self.__path)):
-            # print(i, ' = i ********')
-            # print(self.__path[i],' = path[i]')
-            flag = False
-            epath = []
-            st = self.__G.adj(self.__path[i]) & self.__remain
-            index = (i+space+1) % len(self.__path)
-            end = self.__G.adj(self.__path[index]) & self.__remain
-            
-            if(len(st)==0 or len(end)==0):
-                # print("nonono")
-                continue
-            else:
-                print('path[%d]=%d' %(i, self.__path[i]))
-                print(st, "=st")
-                print('path[%d]=%d' %(index, self.__path[index]))
-                print(end, "=end")
-                v = 0
-                counter = 0
-                list_ev = []
-                for w in st:
-                    if flag:
-                        print("跳出循环")
-                        break
-                    for u in end:
-                        if w != u:
-                            self.__ep_vist = self.__visited[:]
-                            self.__ep_father = [0] * (self.__G.get_adjlen() + 1)
-                            counter = self.__cg_dfs(w, u, self.__path[i], space)
-                            # print(counter, '=counter')
-                            if counter > space:
-                                print('扩展了%d个点' %(counter))
-                                flag = True
-                                break
-                            elif counter == space and space!=0:
-                                print('更换了%d个点' %(counter))
-                                flag = True
-                                break
-                        else:
-                            list_ev.append(w)
-                            
-                if counter == 0 and len(list_ev) != 0 and space == 0:
-                    v = 0
-                    for j in list_ev:
-                        if j not in self.__cycle:
-                            v = j
-                            break
-                    if v != 0:
-                        self.__visited[v] = True
-                        self.__remain.discard(v)
-                        self.__cycle.add(v)
-                        self.__path2.insert(self.__path2.index(self.__path[i])+1, v)
-                        counter = 1
-                        print(v, '=v, 扩展了1个点')  
-
-    def __cg_dfs(self, w, u, stv, space):
-        self.__ep_vist[w] = True
-        counter = 0
-        epath = []
-             
-        for v in self.__G.adj(w):
-            if self.__ep_vist[v]:
-                continue
-            self.__ep_father[v] = w
-            
-            if u == v:
-                epath.append(u)
-                m = self.__ep_father[u]
-                counter += 1
-                while(m != 0):
-                    epath.append(m)
-                    m = self.__ep_father[m]
-                    counter += 1
-                if counter >= space:
-                    epath.reverse()
-                    print(epath)
-                    x = 1
-                    index = self.__path2.index(stv)
-                    del self.__path2[index+1: index+1+space]
-                    for i in epath:
-                        self.__path2.insert(self.__path2.index(stv)+x, i)
-                        x += 1
-                        self.__visited[i] = True
-                        self.__cycle.add(i)
-                        self.__remain.discard(i)
-                    #print(counter, '=counter')
-                return counter
-            
-            if not self.__ep_vist[v]:
-               counter = self.__cg_dfs(v, u, stv, space)
-               #print(counter, '===counter')
-               return counter
-        return counter
-    
-    def __find_path(self, w, u, epath):
-        self.__visted[w] = True
-        if w not in epath:
-            epath.append(w)
-        if u in epath:
-            #要记录一下
-            return True
-        
-        next_v_list = []
-        for x in self.__G.adj(w):
-            if not self.__visited[w]:
-                next_v_list.append(w)
-        
-        next_v = 0
-        if len(next_v_list) != 0:
-            next_v = random.choice(next_v_list)
-        
-        if next_v !=0:
-            self.__find_path(next_v, u)
-
-        return False
-            
-    '''用BFS搜索v和w之间有没有可以扩展的路径'''
-    def __bfs(self, v, w):
-        pass
-    
-    '''用DFS搜索v和w之间有没有可以扩展的路径'''
-    def __dfs(self, v, w):
-        lenv = 0
-        for u in self.__G.adj(v):
-            if not self.__visited[u]:
-                self.__visited[u] = True
-                self.__insert_path.append(u)                    
-                if self.__G.has_edge(u, w): 
-                    print("great@_@")
-                    print(self.__insert_path, '=ipath')
-                    return
-                self.__dfs(u, w)
-
-    #将初始路径转换为初始圈
+        #将初始路径转换为初始圈
     def __rotation2(self):
         self.__stvcounter += 1
         #print(self.__path)
@@ -327,13 +175,225 @@ class LCPsolver:
             i = i + 1
             j = j - 1
         if self.__G.has_edge(self.__path[-1], self.__path[0]):
-            print("找到一个初始圈")
+            # print("找到一个初始圈")
             return True      
         elif self.__stvcounter >= 100:
             return False
         else:
             self.__rotation2()
             return False
+    
+    '''按度的大小排列'''
+    def __sort_degree(self):
+        dic = {}
+        for i in range(1, self.__G.V):
+            dic[i] = self.__G.degree(i)
+        list_v = sorted(dic.items(), key = lambda kv:kv[1], reverse = True)
+            
+        return list_v
+    '''想办法转置度最大的结点到首末端'''
+    '''把剩下的结点转化为圈'''
+                        
+    def init_cgc(self):
+        self.__cycle = set(self.__path)
+        self.__remain = set(self.__comp_v) - self.__cycle
+        self.__path2 = self.__path[:]
+        
+    def change_circle(self, space):
+        self.judge = False
+        self.__path = self.__path2[:]
+        st = set()
+        end = set()
+        for i in range(0, len(self.__path)):
+            # print(i, ' = i ********')
+            # print(self.__path[i],' = path[i]')
+            
+            flag = False
+            epath = []
+            st = self.__G.adj(self.__path[i]) & self.__remain
+            index = (i+space+1) % len(self.__path)
+            end = self.__G.adj(self.__path[index]) & self.__remain
+            
+            if self.__path[i] in self.__remain:
+                continue
+            if self.__path[index] in self.__remain:     #这里其实性能就下降了很多，之后再优化吧
+                # self.judge = True
+                continue
+            
+            if(len(st)==0 or len(end)==0):
+                # print("nonono")
+                continue
+            else:
+                print('path[%d]=%d' %(i, self.__path[i]))
+                print(st, "=st")
+                print('path[%d]=%d' %(index, self.__path[index]))
+                print(end, "=end")
+                v = 0
+                counter = 0
+                list_ev = []
+                for w in st:
+                    if flag:
+                        print("跳出循环")
+                        break
+                    for u in end:
+                        if w != u:
+                            self.__ep_vist = self.__visited[:]
+                            self.__ep_father = [0] * (self.__G.get_adjlen() + 1)
+                            counter = self.__cg_dfs(w, u, self.__path[i], space)
+                            # print(counter, '=counter')
+                            if counter > space:
+                                print('删去了%d个点并扩展了%d个点' %(space, counter))
+                                self.judge = True
+                                flag = True
+                                break
+                            elif counter == space and space!=0:
+                                print('更换了%d个点' %(counter))
+                                # self.judge = True
+                                flag = True
+                                break
+                        else:
+                            list_ev.append(w)
+                            
+                if counter == 0 and len(list_ev) != 0 and space == 0:
+                    v = 0
+                    for j in list_ev:
+                        if j not in self.__cycle:
+                            v = j
+                            break
+                    if v != 0:
+                        self.__visited[v] = True
+                        self.__remain.discard(v)
+                        self.__cycle.add(v)
+                        self.__path2.insert(self.__path2.index(self.__path[i])+1, v)
+                        counter = 1
+                        self.judge = True
+                        print(v, '=v, 扩展了1个点')  
+
+    def __cg_dfs(self, w, u, stv, space):
+        self.__ep_vist[w] = True
+        counter = 0
+        epath = []
+        
+        for v in self.__G.adj(w):
+            if self.__ep_vist[v]:
+                continue
+            self.__ep_father[v] = w
+            
+            if u == v:
+                epath.append(u)
+                m = self.__ep_father[u]
+                counter += 1
+                while(m != 0):
+                    epath.append(m)
+                    m = self.__ep_father[m]
+                    counter += 1
+                if counter >= space:
+                    epath.reverse()
+                    print(epath)
+                    x = 1
+                    index = self.__path2.index(stv)
+                    pdel = self.__path2[index+1: index+1+space] #要删掉的点
+                    del self.__path2[index+1: index+1+space]
+                    for i in pdel:
+                        self.__cycle.discard(i)
+                        self.__remain.add(i)
+                        self.__ep_vist[i] = False
+                        self.__visited[i] = False
+                        #visit要不要换
+                    for i in epath:
+                        self.__path2.insert(self.__path2.index(stv)+x, i)
+                        x += 1
+                        self.__visited[i] = True
+                        self.__cycle.add(i)
+                        self.__remain.discard(i)
+                    #print(counter, '=counter')
+                return counter
+            
+            if not self.__ep_vist[v]:
+               counter = self.__cg_dfs(v, u, stv, space)
+               #print(counter, '===counter')
+               return counter
+        return counter
+    
+    def change_2edge(self):
+        #遍历过的边不再遍历
+        print(self.__cycle)
+        print(len(self.__cycle))
+        c_edge = set()
+        
+        print('交换点')
+        for i in range(0, len(self.__path)):
+            #选中i和i+1
+            index = (i + 1) % len(self.__path)      #这里要取出圈中另外一个相邻点构成的边吗
+            print("i=%d, path[%d]=%d" %(i, i, self.__path[i]))
+            stv = self.__G.adj(self.__path[i]) & self.__cycle - {self.__path[index]}
+            print(stv)
+            print("i=%d, path[%d]=%d" %(index, index, self.__path[index]))
+            end = self.__G.adj(self.__path[index]) & self.__cycle - {self.__path[i]}
+            print(end)
+            cflag = False
+            if ((self.__path[i], self.__path[index]) in c_edge or (self.__path[index], self.__path[i]) in c_edge):
+                print('continue!!!')
+                continue      
+            
+            for w in stv:
+                if cflag:
+                    break
+                m = self.__path.index(w)
+                if not self.__G.has_edge(self.__path[i-1], self.__path[m]):
+                    continue
+                for u in end:
+                    if ((w, u) in c_edge or (u, w) in c_edge or w == u):
+                        continue
+                    if self.__G.has_edge(w, u): 
+                        n = self.__path.index(u)   
+                        if not self.__G.has_edge(self.__path[index+1], self.__path[n]):
+                            continue
+                        if m > n:
+                            if not self.__G.has_edge(self.__path[i], self.__path[m+1]):
+                                continue
+                            if not self.__G.has_edge(self.__path[index], self.__path[n-1]):
+                                continue
+                        else:
+                            if not self.__G.has_edge(self.__path[i], self.__path[m-1]):
+                                continue
+                            if not self.__G.has_edge(self.__path[index], self.__path[n+1]):
+                                continue
+                        self.judge = True
+                        print("交换(%d, %d)和(%d, %d)" %(self.__path[i], self.__path[index], w, u))
+                        tempv = self.__path[i]
+                        self.__path[i] = w
+                        self.__path[self.__path.index(w)] = tempv
+                        tempv = self.__path[index]
+                        self.__path[index] = u
+                        self.__path[self.__path.index(u)] = tempv
+                        c_edge.add((w, u))
+                        c_edge.add((self.__path[i], self.__path[index]))
+                        cflag = True
+                        break
+        self.__path2 = self.__path[:]
+    
+    def __find_path(self, w, u, epath):
+        self.__visted[w] = True
+        if w not in epath:
+            epath.append(w)
+        if u in epath:
+            #要记录一下
+            return True
+        
+        next_v_list = []
+        for x in self.__G.adj(w):
+            if not self.__visited[w]:
+                next_v_list.append(w)
+        
+        next_v = 0
+        if len(next_v_list) != 0:
+            next_v = random.choice(next_v_list)
+        
+        if next_v !=0:
+            self.__find_path(next_v, u)
+
+        return False
 
     def is_hamilton(self, path):
         i = 0
@@ -349,7 +409,8 @@ class LCPsolver:
             else:
                    print("只能找到路径")
         return end
-            
+    
+    
     """检测不可达顶点"""
     def __unreachable(self, v):
         for w in self.__G.adj(v):
@@ -400,26 +461,79 @@ if __name__ == '__main__':
     print(flag)
     print(counter)
     
-    # lcpsol.extend_circle()
     lcpsol.init_cgc()
     lcpsol.change_circle(0)
-    lcpsol.change_circle(1)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(2)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(1)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(2)
-    lcpsol.change_circle(1)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(3)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(1)
-    lcpsol.change_circle(0)
-    lcpsol.change_circle(3)
-    lcpsol.change_circle(0)
-
-    
-    print(comp_root,'232')
     lcpsol.result()
+    lcpsol.judge = True
+    flag = True
+    
+    lcounter = 0
+    while flag:
+        m = 1
+        flag = False
+        while lcpsol.judge:
+            lcpsol.change_circle(0)
+            lcpsol.result()
+            lcounter += 1
+            if lcpsol.judge:
+                flag = True
+        
+        lcpsol.judge = True
+        while lcpsol.judge:
+            lcpsol.change_circle(1)
+            lcpsol.result()
+            lcounter += 1
+            if lcpsol.judge:
+                flag = True
+        
+        lcpsol.judge = True
+        while lcpsol.judge:
+            lcpsol.change_circle(2)
+            lcpsol.result()
+            lcounter += 1
+            if lcpsol.judge:
+                flag = True
+        
+        lcpsol.judge = True
+        while lcpsol.judge:
+            lcpsol.change_circle(0)
+            lcpsol.result()
+            lcounter += 1
+            if lcpsol.judge:
+                flag = True
+                
+        lcpsol.change_2edge()
+        lcpsol.result()
+
+        '''
+        lcpsol.judge = True
+        while lcpsol.judge:
+            lcpsol.change_circle(3)
+            lcpsol.result()
+            lcounter += 1
+            if lcpsol.judge:
+                flag = True
+        '''
+        # 想多做几次转换操作
+        '''
+        lcpsol.judge = True
+        while m < 10:
+            m += 1
+            lcpsol.change_circle(m)
+            lcpsol.result()
+            if lcpsol.judge:
+                flag = True
+        '''
+    print('lcounter=%d' %(lcounter))
+        
+    '''
+    for j in range(0,7):
+        for i in range(0, 3):
+            lcpsol.change_circle(i)
+            lcpsol.result()
+            lcpsol.change_circle(0)
+            lcpsol.result()
+    '''
+    
+    #print(comp_root,'comp_root')
     
