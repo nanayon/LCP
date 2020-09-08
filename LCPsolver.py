@@ -317,20 +317,19 @@ class LCPsolver:
     
     def change_2edge(self):
         #遍历过的边不再遍历
-        print(self.__cycle)
-        print(len(self.__cycle))
+        self.judge = False
         c_edge = set()
         
-        print('交换点')
+        print('交换边')
         for i in range(0, len(self.__path)):
             #选中i和i+1
             index = (i + 1) % len(self.__path)      #这里要取出圈中另外一个相邻点构成的边吗
-            print("i=%d, path[%d]=%d" %(i, i, self.__path[i]))
+            #print("i=%d, path[%d]=%d" %(i, i, self.__path[i]))
             stv = self.__G.adj(self.__path[i]) & self.__cycle - {self.__path[index]}
-            print(stv)
-            print("i=%d, path[%d]=%d" %(index, index, self.__path[index]))
+            #print(stv)
+            #print("i=%d, path[%d]=%d" %(index, index, self.__path[index]))
             end = self.__G.adj(self.__path[index]) & self.__cycle - {self.__path[i]}
-            print(end)
+            #print(end)
             cflag = False
             if ((self.__path[i], self.__path[index]) in c_edge or (self.__path[index], self.__path[i]) in c_edge):
                 print('continue!!!')
@@ -340,24 +339,25 @@ class LCPsolver:
                 if cflag:
                     break
                 m = self.__path.index(w)
-                if not self.__G.has_edge(self.__path[i-1], self.__path[m]):
+                if not self.__G.has_edge(self.__path[i-1], w):
                     continue
                 for u in end:
                     if ((w, u) in c_edge or (u, w) in c_edge or w == u):
                         continue
-                    if self.__G.has_edge(w, u): 
-                        n = self.__path.index(u)   
-                        if not self.__G.has_edge(self.__path[index+1], self.__path[n]):
+                    n = self.__path.index(u)   
+                    #如果这里写self.__G.has_edge(w, u)，那么就应该是交换w和u中的一整段
+                    if abs(m-n) == 1: 
+                        if not self.__G.has_edge(self.__path[(index+1)%len(self.__path)], u):
                             continue
                         if m > n:
-                            if not self.__G.has_edge(self.__path[i], self.__path[m+1]):
+                            if not self.__G.has_edge(self.__path[i], self.__path[(m+1)%len(self.__path)]):
                                 continue
                             if not self.__G.has_edge(self.__path[index], self.__path[n-1]):
                                 continue
                         else:
                             if not self.__G.has_edge(self.__path[i], self.__path[m-1]):
                                 continue
-                            if not self.__G.has_edge(self.__path[index], self.__path[n+1]):
+                            if not self.__G.has_edge(self.__path[index], self.__path[(n+1)%len(self.__path)]):
                                 continue
                         self.judge = True
                         print("交换(%d, %d)和(%d, %d)" %(self.__path[i], self.__path[index], w, u))
@@ -370,6 +370,7 @@ class LCPsolver:
                         c_edge.add((w, u))
                         c_edge.add((self.__path[i], self.__path[index]))
                         cflag = True
+                        self.judge = True
                         break
         self.__path2 = self.__path[:]
     
@@ -431,7 +432,7 @@ class LCPsolver:
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/anna_pre.csv'
+    filename = './dataset/pre_dataset/david_pre.csv'
     root = 8
     counter = 1
     a = 1   #参数
@@ -504,7 +505,10 @@ if __name__ == '__main__':
                 
         lcpsol.change_2edge()
         lcpsol.result()
-
+        if lcpsol.judge:
+                flag = True
+        print(lcpsol.judge, '--------judge')
+   
         '''
         lcpsol.judge = True
         while lcpsol.judge:
@@ -525,7 +529,7 @@ if __name__ == '__main__':
                 flag = True
         '''
     print('lcounter=%d' %(lcounter))
-        
+ 
     '''
     for j in range(0,7):
         for i in range(0, 3):
