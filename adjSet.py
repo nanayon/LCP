@@ -122,6 +122,6 @@ class adjSet():
         return self.__str__()
     
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/test.csv'
+    filename = './dataset/pre_dataset/anna_pre.csv'
     adj_list = adjSet(filename)
     print(adj_list)

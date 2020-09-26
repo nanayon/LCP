@@ -1,6 +1,8 @@
 from adjSet import adjSet as Graph
 from FileProcess import FilePro
 import random
+import csv
+import re
 from goto import with_goto
 
 class LCPsolver:
@@ -396,6 +398,9 @@ class LCPsolver:
 
         return False
 
+    def get_path(self):
+        return self.__path;
+    
     def is_hamilton(self, path):
         i = 0
         end = True
@@ -406,9 +411,10 @@ class LCPsolver:
             i = i + 1
         if end:
             if self.__G.has_edge(path[0],path[-1]):
-                   print("成功了！")
+                print("成功了！")
             else:
-                   print("只能找到路径")
+                end = False
+                print("只能找到路径")
         return end
     
     
@@ -421,7 +427,7 @@ class LCPsolver:
     
     def result(self):
         #print(self.__G.get_all_v())
-        #print(len(self.__G.get_all_v()))
+        #print(len(self.__G.get_all_v()))SS
         print(self.__path)
         print(len(self.__path))
         print(self.__path2)
@@ -432,112 +438,145 @@ class LCPsolver:
                 
         
 if __name__ == '__main__':
-    filename = './dataset/pre_dataset/david_pre.csv'
-    root = 8
-    counter = 1
-    a = 1   #参数
-    graph = Graph(filename)
-    fp = FilePro(graph, filename, root)
     
-    fp.find_comp()          #找连通分片
-    root = fp.fcomp_max()   #找最大连通分片根节点
-    fp.set_root(root)       #设置新的根节点
+    # fname_list = ['adjnoun', 'lesmis', 'celegansneural', 'anna', 'david', 'huck'] 
+    fname_list = ['anna'] 
+
+    #4个地方
+    #fcsv = open('runResult.csv', 'w')
     
-    fp.tarjan(root, 0)
-    fp.comp_divis()
-    comp_root = fp.comp_max()
-    
-    lcpsol = LCPsolver(graph)
-    lcpsol.comp_dfs(comp_root)
-    flag = lcpsol.dfs(comp_root)
-    while not flag and counter <= 90:
-        for i in range(0, 10):
-            lcpsol.reset()
+    for fname in fname_list:
+        filename = './dataset/pre_dataset/'+ fname +'_pre.csv'
+        
+        #fcsv.writelines([fname, '\n'])
+       
+        root = 8
+        graph = Graph(filename)
+        fp = FilePro(graph, filename, root)
+        
+        fp.find_comp()          #找连通分片
+        root = fp.fcomp_max()   #找最大连通分片根节点
+        fp.set_root(root)       #设置新的根节点
+        
+        fp.tarjan(root, 0)
+        fp.comp_divis()
+        comp_root = fp.comp_max()
+        
+        alcounter = 0       #总体程序运行次数
+        while alcounter < 1:
+            counter = 1
+            a = 1   #参数
+            
+            lcpsol = LCPsolver(graph)
+            lcpsol.comp_dfs(comp_root)
             flag = lcpsol.dfs(comp_root)
-            counter += 1
-        a -= 0.1
-        lcpsol.set_a(a)
-        
-    print(a)
-    print(flag)
-    print(counter)
+            
+            '''运行10次找圈'''
+            while not flag and counter <= 90:
+                for i in range(0, 10):
+                    lcpsol.reset()
+                    flag = lcpsol.dfs(comp_root)
+                    counter += 1
+                a -= 0.1
+                lcpsol.set_a(a)
     
-    lcpsol.init_cgc()
-    lcpsol.change_circle(0)
-    lcpsol.result()
-    lcpsol.judge = True
-    flag = True
+            
+            if lcpsol.is_hamilton(lcpsol.get_path()):
+                alcounter += 1  #找到了有效圈才算一次运行
+            else:               #否则重来咯
+                del lcpsol
+                continue
     
-    lcounter = 0
-    while flag:
-        m = 1
-        flag = False
-        while lcpsol.judge:
+            print(a)
+            print(flag)
+            print(counter)
+            
+            lcpsol.init_cgc()
             lcpsol.change_circle(0)
             lcpsol.result()
-            lcounter += 1
-            if lcpsol.judge:
-                flag = True
-        
-        lcpsol.judge = True
-        while lcpsol.judge:
-            lcpsol.change_circle(1)
-            lcpsol.result()
-            lcounter += 1
-            if lcpsol.judge:
-                flag = True
-        
-        lcpsol.judge = True
-        while lcpsol.judge:
-            lcpsol.change_circle(2)
-            lcpsol.result()
-            lcounter += 1
-            if lcpsol.judge:
-                flag = True
-        
-        lcpsol.judge = True
-        while lcpsol.judge:
-            lcpsol.change_circle(0)
-            lcpsol.result()
-            lcounter += 1
-            if lcpsol.judge:
-                flag = True
+            lcpsol.judge = True
+            flag = True
+            
+            lcounter = 0
+            while flag:
+                m = 1
+                flag = False
+                while lcpsol.judge:
+                    lcpsol.change_circle(0)
+                    lcpsol.result()
+                    if lcpsol.judge:
+                        lcounter += 1
+                        flag = True
                 
-        lcpsol.change_2edge()
-        lcpsol.result()
-        if lcpsol.judge:
-                flag = True
-        print(lcpsol.judge, '--------judge')
-   
+                lcpsol.judge = True
+                while lcpsol.judge:
+                    lcpsol.change_circle(1)
+                    lcpsol.result()
+                    if lcpsol.judge:
+                        lcounter += 1
+                        flag = True
+                
+                lcpsol.judge = True
+                while lcpsol.judge:
+                    lcpsol.change_circle(2)
+                    lcpsol.result()
+                    if lcpsol.judge:
+                        lcounter += 1
+                        flag = True
+                        
+                '''  
+                lcpsol.judge = True
+                while lcpsol.judge:
+                    lcpsol.change_circle(0)
+                    lcpsol.result()
+                    lcounter += 1
+                    if lcpsol.judge:
+                        flag = True
+                
+                      
+                lcpsol.change_2edge()
+                lcpsol.result()
+                if lcpsol.judge:
+                        flag = True
+                print(lcpsol.judge, '--------judge')
+                '''
+           
+                '''
+                lcpsol.judge = True
+                while lcpsol.judge:
+                    lcpsol.change_circle(3)
+                    lcpsol.result()
+                    lcounter += 1
+                    if lcpsol.judge:
+                        flag = True
+                '''
+                # 想多做几次转换操作
+                '''
+                lcpsol.judge = True
+                while m < 10:
+                    m += 1
+                    lcpsol.change_circle(m)
+                    lcpsol.result()
+                    if lcpsol.judge:
+                        flag = True
+                '''
+            print('lcounter=%d' %(lcounter))
+            
+            #fcsv.writelines([str(alcounter), ',', str(len(lcpsol.get_path())), ',', str(lcpsol.get_path()).replace(',',' '), '\n'])
+            
+            #调用析构函数
+            del lcpsol
+         
         '''
-        lcpsol.judge = True
-        while lcpsol.judge:
-            lcpsol.change_circle(3)
-            lcpsol.result()
-            lcounter += 1
-            if lcpsol.judge:
-                flag = True
+        for j in range(0,7):
+            for i in range(0, 3):
+                lcpsol.change_circle(i)
+                lcpsol.result()
+                lcpsol.change_circle(0)
+                lcpsol.result()
         '''
-        # 想多做几次转换操作
-        '''
-        lcpsol.judge = True
-        while m < 10:
-            m += 1
-            lcpsol.change_circle(m)
-            lcpsol.result()
-            if lcpsol.judge:
-                flag = True
-        '''
-    print('lcounter=%d' %(lcounter))
- 
-    '''
-    for j in range(0,7):
-        for i in range(0, 3):
-            lcpsol.change_circle(i)
-            lcpsol.result()
-            lcpsol.change_circle(0)
-            lcpsol.result()
-    '''
+        
+        #print(comp_root,'comp_root')
     
-    #print(comp_root,'comp_root')
+    #fcsv.close()
     

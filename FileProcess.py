@@ -82,6 +82,7 @@ class FilePro():
         # print(self.__component.keys())
         # 分割图
         # self.comp_divis()
+    '''找到所有的连通分量'''    
     def find_comp(self):
         for i in range(1,self.__G.get_adjlen()):
             self.__counter = 0
@@ -98,7 +99,7 @@ class FilePro():
             if not self.__visited[w]:
                 self.comp_dfs0(w)
             
-    #从某个结点开始进行深度遍历
+    '''从某个结点开始进行深度遍历'''
     def comp_dfs(self, v, u, comp_vis, comp_root): 
         for w in list(self.__G.adj(v)):
             if not comp_vis[w]:
@@ -111,7 +112,7 @@ class FilePro():
                 self.__comp_count += 1
                 self.comp_dfs(w, u, comp_vis, comp_root)
             
-    # 判断anser中剩下的结点是否在一个联通分片里
+    '''判断anser中剩下的结点是否在一个联通分片里'''
     def comp_dfs2(self, v, comp_vis): 
         for w in list(self.__G.adj(v)):
             if not comp_vis[w]:
@@ -182,6 +183,31 @@ class FilePro():
     def tri_pre(self):
         pass
     
+    '''返回最大连通分量中的所有顶点的id'''
+    def get_max_component(self, root):
+        self.find_comp()        #找连通分片
+        root = self.fcomp_max()   #找最大连通分片根节点
+        self.set_root(root)       #设置新的根节点
+            
+        self.tarjan(root, 0)
+        self.comp_divis()
+        
+        comp_root = self.comp_max()    #tarjan分割后的最大连通片顶点？
+        print(comp_root)
+        vis = [False] * self.__G.get_adjlen()
+        componentv = []
+        self.comp_dfs_arbitrary_v(vis, comp_root, componentv)
+        
+        return componentv
+        
+    '''从任意顶点开始搜索它当前所在的连通片'''
+    def comp_dfs_arbitrary_v(self, vis, v, componentv):
+        vis[v] = True
+        componentv.append(v)
+        for w in self.__G.adj(v):
+            if not vis[w]:
+                self.comp_dfs_arbitrary_v(vis, w, componentv)
+    
     def show_information(self):
         print(self.__ans)
         print(self.__fcomponent)
@@ -217,4 +243,3 @@ if __name__ == '__main__':
     fp.show_information()
     fp.comp_max()
     print(root, 'root')
- 
