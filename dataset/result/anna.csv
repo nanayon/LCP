@@ -155,3 +155,5 @@ annaid, degree, frequency
 24,2,0
 80,2,0
 75,2,0
+------------------Calculate points that do not appear in each run------------------,,
+lenth, unappear_vertex(degree)
